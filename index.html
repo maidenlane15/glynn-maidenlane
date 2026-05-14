@@ -1740,6 +1740,13 @@ ity:visible}90%{opacity:0}100%{opacity:0;visibility:hidden;pointer-events:none}}
   <div style="position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;gap:8px">
     <button onclick="tpFontUp()" style="width:44px;height:44px;border-radius:50%;background:rgba(201,168,76,0.2);border:1px solid rgba(201,168,76,0.4);color:#C9A84C;font-size:20px;cursor:pointer">A+</button>
     <button onclick="tpFontDown()" style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#9B97A0;font-size:14px;cursor:pointer">A-</button>
+    <button id="tp-scroll-btn" onclick="tpToggleScroll()" style="width:44px;height:44px;border-radius:50%;background:rgba(29,158,117,0.2);border:1px solid rgba(29,158,117,0.4);color:#1D9E75;font-size:18px;cursor:pointer">&#9654;</button>
+  </div>
+  <!-- Scroll speed control -->
+  <div style="position:fixed;bottom:20px;left:16px;display:flex;flex-direction:column;gap:8px;align-items:center">
+    <div style="font-size:9px;color:#5C5868;text-transform:uppercase">Speed</div>
+    <button onclick="tpScrollFaster()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#9B97A0;font-size:14px;cursor:pointer">+</button>
+    <button onclick="tpScrollSlower()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#9B97A0;font-size:14px;cursor:pointer">-</button>
   </div>
 </div>
 
@@ -2942,9 +2949,9 @@ async function sm(){
       var sysP='You are Glynn \u2014 AI Store Manager and first product of the TENT platform. Powered by Claude. You serve Glenn Sunkett and team across all six companies. Use this context in every response.\n\nOWNERS: Glenn Sunkett (~54, Henderson/Las Vegas NV) \u2014 Owner, strategy/sourcing/financing/AI. Legacy-driven, evidence-based, health-conscious. Wrongful incarceration history shapes his urgency. Britney Sunkett \u2014 Co-owner, public face, streamer, in-store manager.\n\n'+_teamLine+'\n\nCOMPANIES (Nevada S-Corps):\n1. MAIDENLANE \u2014 Luxury consignment boutique Henderson/Las Vegas est.2017. Designer handbags/shoes/accessories. Grand Opening June 1 2026. Hours: Mon-Thu 11am-7pm, Fri-Sat 11am-8pm, Sun 12-6pm. Poshmark streams Mon/Wed/Sat 12:30pm (5-8+ hrs). NO simulcast (1-of-1 inventory). Consignors earn 40-70%. Chase biz account ~10yrs. maidenlanelasvegas.com.\n2. CRAMP TEA \u2014 Herbal menstrual tea. 15 pyramid sachets. Tagline: FROM ROOT TO REAL RELIEF. Amazon seller: CrampTea. GS1: 199284251823. FDA registered. cramptea.com. CAN simulcast. Launch June 1 2026.\n3. BLACKVALE CAPITAL \u2014 Real estate investment.\n4. MAIDEN\u2019S JOURNEY \u2014 Non-profit.\n5. TENT \u2014 AI OS platform. Agents: Nova (content), Rex (ecommerce), Lena (CRM), Finn (pricing), Sage (inventory), Kai (analytics), Atlas (finance), Lex (legal).\n6. B.U.M.A GROUP \u2014 Holding company.\n\nRULES: Never generic \u2014 always specific. Correct course instantly if user corrects you. Factor in who is logged in. Luxury-brand tone: warm, authoritative, concise. Under 220 words. '+empCtx;
       var r=await fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
-        headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
+        headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
         body:JSON.stringify({
-          model:'claude-3-5-sonnet-20241022',
+          model:'claude-sonnet-4-6',
           max_tokens:600,
           system:sysP,
           messages:history
@@ -3615,7 +3622,7 @@ async function genListing() {
   if (btn) { btn.textContent = "Nova is writing your listings..."; btn.disabled = true; }
   var prompt = "Write optimized luxury resale listings. Item: " + brand + " " + name + ". Condition: " + cond + ". Price: $" + price + ". Color: " + color + ". Auth: " + auth + ". Format:\nSHOPIFY_TITLE: [title]\nSHOPIFY_DESC: [2-3 sentences]\nEBAY_TITLE: [max 80 chars]\nEBAY_DESC: [detailed]\nPOSHMARK_TITLE: [title]\nPOSHMARK_DESC: [casual]\nWHATNOT_TITLE: [title]\nWHATNOT_DESC: [energetic]";
   try {
-    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-3-5-sonnet-20241022", max_tokens: 1000, messages: [{role: "user", content: "You are Nova, Maidenlane luxury boutique AI. " + prompt}]})});
+    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{role: "user", content: "You are Nova, Maidenlane luxury boutique AI. " + prompt}]})});
     var data = await res.json(); var txt = (data.content && data.content[0]) ? data.content[0].text : "";
     setFields(["nl-s-t","nl-e-t","nl-p-t","nl-w-t","nl-s-d","nl-e-d","nl-p-d","nl-w-d"], [extractField(txt,"SHOPIFY_TITLE")||brand+" "+name, extractField(txt,"EBAY_TITLE")||brand+" "+name+" "+cond, extractField(txt,"POSHMARK_TITLE")||brand+" "+name, extractField(txt,"WHATNOT_TITLE")||"Authenticated "+brand+" "+name, extractField(txt,"SHOPIFY_DESC")||"Authenticated "+cond+" condition "+brand+" "+name+". "+auth, extractField(txt,"EBAY_DESC")||"Authentic "+brand+" "+name+". Condition: "+cond+". "+auth, extractField(txt,"POSHMARK_DESC")||"Gorgeous authentic "+brand+" "+name+"! Condition: "+cond, extractField(txt,"WHATNOT_DESC")||"Up next: authenticated "+brand+" "+name+"!"]);
   } catch(e) { setFields(["nl-s-t","nl-e-t","nl-p-t","nl-w-t"],[brand+" "+name,brand+" "+name+" "+cond,brand+" "+name,"Authenticated "+brand+" "+name]); }
@@ -3631,7 +3638,7 @@ async function runXlist() {
   if (btn) { btn.textContent = "Agents working..."; btn.disabled = true; }
   var prompt = "Write optimized luxury resale listings for: " + item + ". Format:\nSHOPIFY_TITLE: [title]\nSHOPIFY_DESC: [desc]\nEBAY_TITLE: [title]\nEBAY_DESC: [desc]\nPOSHMARK_TITLE: [title]\nPOSHMARK_DESC: [desc]\nWHATNOT_TITLE: [title]\nWHATNOT_DESC: [desc]";
   try {
-    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-3-5-sonnet-20241022", max_tokens: 800, messages: [{role: "user", content: "You are Nova, Maidenlane AI. " + prompt}]})});
+    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-sonnet-4-6", max_tokens: 800, messages: [{role: "user", content: "You are Nova, Maidenlane AI. " + prompt}]})});
     var data = await res.json(); var txt = (data.content && data.content[0]) ? data.content[0].text : "";
     setFields(["xl-s-t","xl-e-t","xl-p-t","xl-w-t","xl-s-d","xl-e-d","xl-p-d","xl-w-d"],[extractField(txt,"SHOPIFY_TITLE")||item,extractField(txt,"EBAY_TITLE")||item,extractField(txt,"POSHMARK_TITLE")||item,extractField(txt,"WHATNOT_TITLE")||item,extractField(txt,"SHOPIFY_DESC")||"Authenticated luxury item.",extractField(txt,"EBAY_DESC")||"Authenticated.",extractField(txt,"POSHMARK_DESC")||"Gorgeous authenticated piece!",extractField(txt,"WHATNOT_DESC")||"Authenticated luxury!"]);
   } catch(e) { setFields(["xl-s-t","xl-e-t","xl-p-t","xl-w-t"],[item,item,item,item]); }
@@ -3663,7 +3670,7 @@ async function agentSend(key) {
   var uEl = document.createElement("div"); uEl.className = "aw-msg"; uEl.style.cssText = "background:rgba(201,168,76,0.08);border-color:rgba(201,168,76,0.2);color:#C9A84C;font-weight:500"; uEl.textContent = text; out.appendChild(uEl);
   var tEl = document.createElement("div"); tEl.className = "aw-msg aw-think"; tEl.style.borderColor = "rgba("+hexRgb(color)+",0.2)"; tEl.innerHTML = "<span style='background:"+color+"'></span><span style='background:"+color+"'></span><span style='background:"+color+"'></span>"; out.appendChild(tEl); out.scrollTop = out.scrollHeight;
   try {
-    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-3-5-sonnet-20241022", max_tokens: 800, system: agentSys[key] || "You are a helpful AI agent.", messages: [{role: "user", content: text}]})});
+    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-sonnet-4-6", max_tokens: 800, system: agentSys[key] || "You are a helpful AI agent.", messages: [{role: "user", content: text}]})});
     var data = await res.json(); var reply = (data.content && data.content[0]) ? data.content[0].text : "Please try again.";
     tEl.remove(); var rEl = document.createElement("div"); rEl.className = "aw-msg"; rEl.style.borderColor = "rgba("+hexRgb(color)+",0.2)"; rEl.innerHTML = reply.replace(/\n/g, "<br>"); out.appendChild(rEl);
   } catch(e) { tEl.remove(); var eEl = document.createElement("div"); eEl.className = "aw-msg"; eEl.style.cssText = "border-color:rgba(192,57,43,0.3);color:#E74C3C"; eEl.textContent = "Connection issue - please try again."; out.appendChild(eEl); }
@@ -3732,8 +3739,8 @@ async function genStatusEmail(btn,name,contract,item,price,status,commission,pay
   try{
     fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
-      headers:{"Content-Type":"application/json","anthropic-dangerous-direct-browser-access":"true","x-api-key":getApiKey()},
-      body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:500,messages:[{role:"user",content:prompt}]})
+      headers:{"Content-Type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","x-api-key":getApiKey()},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:500,messages:[{role:"user",content:prompt}]})
     }).then(function(r){
       if(!r.ok){localEmail();return;}
       return r.json();
@@ -3890,7 +3897,7 @@ async function coSend(coId, coName) {
       method: "POST",
       headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"},
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-6",
         max_tokens: 600,
         system: "You are Glynn, AI Store Manager for " + coName + ". Process everything shared — analyze images, acknowledge documents, understand updates — and state 1-2 specific ways you will apply this to managing " + coName + " more effectively.",
         messages: histMsgs.concat([{role: "user", content: apiContent}])
@@ -4063,7 +4070,7 @@ async function tcpSend() {
       method: "POST",
       headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"},
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-sonnet-4-6",
         max_tokens: 600,
         system: "You are Glynn, AI Store Manager. Private task session with " + tcpState.empName + " on task: " + tcpState.taskTitle + ". Guide: " + tcpState.taskHow + ". Help them complete this task. Be specific and direct. You can answer any question, not just task-related ones.",
         messages: histMsgs
@@ -4411,8 +4418,8 @@ function saveBulkItems(){var tb=document.getElementById('bulk-tbody');var sl=doc
 }
 function toggleCL(hdr){var body=hdr.nextElementSibling;if(!body)return;var open=body.classList.contains('open');document.querySelectorAll('.cl-b').forEach(function(b){b.classList.remove('open');});if(!open)body.classList.add('open');}
 function saveCL(btn){var card=btn.closest('.cl-c');var nm=card?card.querySelector('input'):null;alert(nm?'Saved: '+nm.value:'Saved.');}
-async function emailCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,messages:[{role:'user',content:'Write a brief warm professional email from '+co+' to '+name+'. Invite them to connect. Sign as: The '+co+' Team. Under 150 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Email';btn.disabled=false;}}
-async function updateCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:500,messages:[{role:'user',content:'Write a professional account update email from '+co+' to '+name+'. We are growing. Value our partnership. Invite a call. Sign as: Glenn Sunkett, '+co+'. Under 200 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Account Update';btn.disabled=false;}}
+async function emailCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:'Write a brief warm professional email from '+co+' to '+name+'. Invite them to connect. Sign as: The '+co+' Team. Under 150 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Email';btn.disabled=false;}}
+async function updateCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,messages:[{role:'user',content:'Write a professional account update email from '+co+' to '+name+'. We are growing. Value our partnership. Invite a call. Sign as: Glenn Sunkett, '+co+'. Under 200 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Account Update';btn.disabled=false;}}
 function acoWithHub(){
   var nm=document.getElementById('con');
   if(!nm||!nm.value.trim()){alert('Please enter a company name.');return;}
@@ -4436,7 +4443,7 @@ async function csCall(prompt,resultId,btnId){
   var origText=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Nova is writing...';}
   try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     var d=await res.json();
     var txt=(d.content&&d.content[0])?d.content[0].text:'Unable to generate. Try again.';
     csShowResult(resultId,txt);
@@ -4551,7 +4558,7 @@ async function csRun() {
     if (btn) { btn.disabled = false; btn.textContent = "\u26A1 Run Nova"; }
   };
   xhr.send(JSON.stringify({
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-sonnet-4-6",
     max_tokens: 1200,
     messages: [{role: "user", content: userMsg}]
   }));
@@ -5606,8 +5613,8 @@ function sendHotline(){
   var t=document.createElement('div');t.className='msg g';t.id='hl-t';
   t.innerHTML='<div class="mav g">G</div><div class="mb" style="color:#9B97A0">Adjusting plan...</div>';
   if(feed){feed.appendChild(t);feed.scrollTop=feed.scrollHeight;}
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
-    body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:300,
+  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,
       system:'You are Glynn, AI manager for Maidenlane. Staff: '+((prData.employees||[]).map(function(e){return e.name;}).join(', '))+'. Owner sent urgent update. Acknowledge, state what you are adjusting, confirm new priorities. Max 4 sentences.',
       messages:[{role:'user',content:msg}]})
   }).then(function(r){return r.json();}).then(function(d){
@@ -5635,8 +5642,8 @@ function sendIntelMsg(){
   var t=document.createElement('div');t.className='msg g';t.id='intel-t';
   t.innerHTML='<div class="mav g" style="background:#8B64BF">G</div><div class="mb" style="color:#9B97A0">Analyzing...</div>';
   if(feed){feed.appendChild(t);feed.scrollTop=feed.scrollHeight;}
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
-    body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,
+  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,
       system:'You are Glynn Intel for Maidenlane. Employees: '+((prData.employees||[]).map(function(e){return e.name;}).join(', '))+'. Analyze owner input and provide specific actionable guidance.',
       messages:[{role:'user',content:msg}]})
   }).then(function(r){return r.json();}).then(function(d){
@@ -7113,7 +7120,7 @@ async function csRunWrite(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':csGetKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:2000,system:sysPrompt,messages:messages})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:sysPrompt,messages:messages})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -7151,7 +7158,7 @@ async function csGenPromptNew(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
     });
     var d=await resp.json();
     csData.prompt=d.content&&d.content[0]?d.content[0].text.trim():'';
@@ -7221,7 +7228,7 @@ async function csGenVideoPrompt(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,system:sysPrompt,messages:messages})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,system:sysPrompt,messages:messages})
     });
     var d=await resp.json();
     var promptTxt=d.content&&d.content[0]?d.content[0].text.trim():'';
@@ -7307,7 +7314,7 @@ async function csRunBatch(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -7515,7 +7522,7 @@ async function glynnAutonomous(manual){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:2000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -7712,7 +7719,7 @@ async function lensAnalyze(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:1500,system:sysPrompt,messages:messages})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,system:sysPrompt,messages:messages})
     });
     var d=await resp.json();
     // Check for API errors first
@@ -7784,7 +7791,7 @@ function lensCloseTeleprompter(){
   var tp=document.getElementById('lens-teleprompter');
   if(tp)tp.style.display='none';
   document.body.style.overflow='';
-  // Restart camera
+  try{tpResetScroll();}catch(e){}
   lensStartCamera();
 }
 function tpFontUp(){tpFontSize=Math.min(40,tpFontSize+2);var el=document.getElementById('tp-script');if(el)el.style.fontSize=tpFontSize+'px';}
@@ -7903,7 +7910,7 @@ async function lensGenOpeningScript(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,messages:[{role:'user',content:prompt}]})
     });
     var d=await resp.json();
     if(el)el.textContent=d.content&&d.content[0]?d.content[0].text.trim():'Could not generate script.';
@@ -7925,7 +7932,7 @@ async function lensGenClosingScript(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:300,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:prompt}]})
     });
     var d=await resp.json();
     if(el)el.textContent=d.content&&d.content[0]?d.content[0].text.trim():'';
@@ -7992,7 +7999,7 @@ async function csGenCalendar(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:'Generate a 7-day content calendar for '+co+(focus?' focused on: '+focus:'')+'. Start from '+start+'. Platforms: '+platforms.join(', ')+'. Write complete, post-ready content for each day.'}]})
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:'Generate a 7-day content calendar for '+co+(focus?' focused on: '+focus:'')+'. Start from '+start+'. Platforms: '+platforms.join(', ')+'. Write complete, post-ready content for each day.'}]})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -8074,7 +8081,7 @@ async function testApiKey(){
         'anthropic-dangerous-direct-browser-access':'true'
       },
       body:JSON.stringify({
-        model:'claude-3-5-sonnet-20241022',
+        model:'claude-sonnet-4-6',
         max_tokens:30,
         messages:[{role:'user',content:'Reply with exactly: GLYNN OK'}]
       })
@@ -8100,6 +8107,36 @@ async function testApiKey(){
     resultEl.innerHTML='<strong style="color:#E74C3C">&#10007; NETWORK ERROR</strong><br>'
       +err.message+'<br>Key: ...'+(key?key.slice(-6):'none');
   }
+}
+
+
+// ── TELEPROMPTER AUTO-SCROLL ──────────────────────────────────────
+var tpScrollInterval=null;
+var tpScrollSpeed=2; // pixels per tick
+var tpScrollActive=false;
+function tpToggleScroll(){
+  tpScrollActive=!tpScrollActive;
+  var btn=document.getElementById('tp-scroll-btn');
+  if(tpScrollActive){
+    if(btn){btn.style.background='rgba(29,158,117,0.5)';btn.innerHTML='&#9646;&#9646;';}
+    tpScrollInterval=setInterval(function(){
+      var tp=document.getElementById('lens-teleprompter');
+      if(tp)tp.scrollTop+=tpScrollSpeed;
+    },50);
+  } else {
+    if(btn){btn.style.background='rgba(29,158,117,0.2)';btn.innerHTML='&#9654;';}
+    clearInterval(tpScrollInterval);
+  }
+}
+function tpScrollFaster(){tpScrollSpeed=Math.min(10,tpScrollSpeed+1);}
+function tpScrollSlower(){tpScrollSpeed=Math.max(1,tpScrollSpeed-1);}
+function tpResetScroll(){
+  tpScrollActive=false;
+  clearInterval(tpScrollInterval);
+  var btn=document.getElementById('tp-scroll-btn');
+  if(btn){btn.style.background='rgba(29,158,117,0.2)';btn.innerHTML='&#9654;';}
+  var tp=document.getElementById('lens-teleprompter');
+  if(tp)tp.scrollTop=0;
 }
 
 window.addEventListener('load',function(){
@@ -8383,9 +8420,9 @@ function aoGenerate(){
   var sysPrompt = agentPersonas[agent]||'You are a helpful AI agent for Maidenlane luxury boutique.';
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
+    headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
     body:JSON.stringify({
-      model:'claude-3-5-sonnet-20241022',
+      model:'claude-sonnet-4-6',
       max_tokens:800,
       system:sysPrompt,
       messages:[{role:'user',content:task}]
@@ -9141,8 +9178,8 @@ function sendIntel(){
   var sysCtx = 'You are Glynn, AI store manager for Maidenlane. The owner has submitted information or a request via the Glynn Intel channel. Acknowledge what was submitted, confirm how you will use it, and ask one follow-up question if needed. Be concise and specific.';
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
-    headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
-    body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:300,system:sysCtx,messages:intelHistory})
+    headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,system:sysCtx,messages:intelHistory})
   }).then(function(r){return r.json();})
   .then(function(d){
     var reply = d.content&&d.content[0]?d.content[0].text:'Received. I\'ve updated my records.';
