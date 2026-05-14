@@ -1615,28 +1615,21 @@ ity:visible}90%{opacity:0}100%{opacity:0;visibility:hidden;pointer-events:none}}
   </div>
   <div style="font-size:11px;color:#9B97A0;margin-bottom:14px">Point camera at any item — instant market report + seller script for Brit's stream.</div>
 
-  <!-- CAMERA CAPTURE — PRIMARY INTERFACE -->
+  <!-- CAMERA CAPTURE — NATIVE OS CAMERA -->
   <div id="lens-camera-section">
-    <!-- Live camera preview -->
-    <div style="position:relative;width:100%;background:#0D0F14;border-radius:12px;overflow:hidden;margin-bottom:10px;border:2px solid rgba(201,168,76,0.3)" id="lens-cam-wrap">
-      <video id="lens-video" autoplay playsinline style="width:100%;display:block;min-height:200px;object-fit:cover"></video>
-      <canvas id="lens-canvas" style="display:none"></canvas>
-      <!-- Crosshair overlay -->
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60px;height:60px;pointer-events:none">
-        <div style="position:absolute;top:0;left:0;width:16px;height:16px;border-top:2px solid #C9A84C;border-left:2px solid #C9A84C;border-radius:2px 0 0 0"></div>
-        <div style="position:absolute;top:0;right:0;width:16px;height:16px;border-top:2px solid #C9A84C;border-right:2px solid #C9A84C;border-radius:0 2px 0 0"></div>
-        <div style="position:absolute;bottom:0;left:0;width:16px;height:16px;border-bottom:2px solid #C9A84C;border-left:2px solid #C9A84C;border-radius:0 0 0 2px"></div>
-        <div style="position:absolute;bottom:0;right:0;width:16px;height:16px;border-bottom:2px solid #C9A84C;border-right:2px solid #C9A84C;border-radius:0 0 2px 0"></div>
-      </div>
-      <!-- Capture button overlay -->
-      <div style="position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:16px">
-        <button onclick="this.style.background='#C9A84C';this.textContent='⏳';lensCapture();" id="lens-capture-btn" style="width:64px;height:64px;border-radius:50%;background:#fff;border:4px solid rgba(201,168,76,0.8);cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.5)">&#128247;</button>
-      </div>
+    <canvas id="lens-canvas" style="display:none"></canvas>
+    <div id="lens-cam-wrap" style="margin-bottom:10px">
+      <!-- Label directly wraps input — guaranteed to work on all mobile browsers -->
+      <label for="lens-native-camera" id="lens-capture-btn" style="width:100%;padding:32px 20px;background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.06));border:2px solid rgba(201,168,76,0.4);border-radius:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;box-sizing:border-box">
+        <div style="font-size:52px">&#128247;</div>
+        <div style="font-size:16px;font-weight:700;color:#C9A84C">Tap to Open Camera</div>
+        <div style="font-size:11px;color:#9B97A0">Point at any item — Glynn identifies and analyzes instantly</div>
+      </label>
+      <input type="file" id="lens-native-camera" accept="image/*" capture="environment" style="display:none" onchange="lensNativeCapture(this)">
     </div>
-    <!-- Captured photo preview -->
     <div id="lens-photo-preview" style="display:none;position:relative;margin-bottom:10px">
       <img id="lens-captured-img" style="width:100%;border-radius:12px;border:2px solid rgba(201,168,76,0.4)">
-      <button onclick="lensRetake()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer">&#128247; Retake</button>
+      <button onclick="lensRetake()" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer">&#128247; New Photo</button>
     </div>
     <!-- OR type it in -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -2430,6 +2423,8 @@ ity:visible}90%{opacity:0}100%{opacity:0;visibility:hidden;pointer-events:none}}
       <button class="btn btn-g btn-sm" onclick="saveApiKey()">Save</button>
     </div>
     <div id="api-key-status" style="font-size:11px;min-height:16px"></div>
+    <button class="btn btn-o btn-sm" style="width:100%;margin-top:8px;font-size:12px" onclick="testApiKey()">&#9889; Test API Connection</button>
+    <div id="api-test-result" style="font-size:12px;margin-top:8px;padding:10px;border-radius:8px;display:none;line-height:1.6"></div>
     <div style="border-top:1px solid rgba(255,255,255,0.07);margin:14px 0 12px"></div>
     <div style="font-size:13px;font-weight:600;color:#C9A84C;margin-bottom:6px">&#128140; Resend Email Key</div>
     <div style="font-size:11px;color:#9B97A0;margin-bottom:10px;line-height:1.6">Required for real email blasts. Free at <span style="color:#F0EDE8">resend.com</span> — paste key below (starts with <span style="color:#F0EDE8;font-family:monospace">re_</span>).</div>
@@ -2949,7 +2944,7 @@ async function sm(){
         method:'POST',
         headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
         body:JSON.stringify({
-          model:'claude-sonnet-4-20250514',
+          model:'claude-3-5-sonnet-20241022',
           max_tokens:600,
           system:sysP,
           messages:history
@@ -3620,7 +3615,7 @@ async function genListing() {
   if (btn) { btn.textContent = "Nova is writing your listings..."; btn.disabled = true; }
   var prompt = "Write optimized luxury resale listings. Item: " + brand + " " + name + ". Condition: " + cond + ". Price: $" + price + ". Color: " + color + ". Auth: " + auth + ". Format:\nSHOPIFY_TITLE: [title]\nSHOPIFY_DESC: [2-3 sentences]\nEBAY_TITLE: [max 80 chars]\nEBAY_DESC: [detailed]\nPOSHMARK_TITLE: [title]\nPOSHMARK_DESC: [casual]\nWHATNOT_TITLE: [title]\nWHATNOT_DESC: [energetic]";
   try {
-    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{role: "user", content: "You are Nova, Maidenlane luxury boutique AI. " + prompt}]})});
+    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-3-5-sonnet-20241022", max_tokens: 1000, messages: [{role: "user", content: "You are Nova, Maidenlane luxury boutique AI. " + prompt}]})});
     var data = await res.json(); var txt = (data.content && data.content[0]) ? data.content[0].text : "";
     setFields(["nl-s-t","nl-e-t","nl-p-t","nl-w-t","nl-s-d","nl-e-d","nl-p-d","nl-w-d"], [extractField(txt,"SHOPIFY_TITLE")||brand+" "+name, extractField(txt,"EBAY_TITLE")||brand+" "+name+" "+cond, extractField(txt,"POSHMARK_TITLE")||brand+" "+name, extractField(txt,"WHATNOT_TITLE")||"Authenticated "+brand+" "+name, extractField(txt,"SHOPIFY_DESC")||"Authenticated "+cond+" condition "+brand+" "+name+". "+auth, extractField(txt,"EBAY_DESC")||"Authentic "+brand+" "+name+". Condition: "+cond+". "+auth, extractField(txt,"POSHMARK_DESC")||"Gorgeous authentic "+brand+" "+name+"! Condition: "+cond, extractField(txt,"WHATNOT_DESC")||"Up next: authenticated "+brand+" "+name+"!"]);
   } catch(e) { setFields(["nl-s-t","nl-e-t","nl-p-t","nl-w-t"],[brand+" "+name,brand+" "+name+" "+cond,brand+" "+name,"Authenticated "+brand+" "+name]); }
@@ -3636,7 +3631,7 @@ async function runXlist() {
   if (btn) { btn.textContent = "Agents working..."; btn.disabled = true; }
   var prompt = "Write optimized luxury resale listings for: " + item + ". Format:\nSHOPIFY_TITLE: [title]\nSHOPIFY_DESC: [desc]\nEBAY_TITLE: [title]\nEBAY_DESC: [desc]\nPOSHMARK_TITLE: [title]\nPOSHMARK_DESC: [desc]\nWHATNOT_TITLE: [title]\nWHATNOT_DESC: [desc]";
   try {
-    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({model: "claude-sonnet-4-20250514", max_tokens: 800, messages: [{role: "user", content: "You are Nova, Maidenlane AI. " + prompt}]})});
+    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-3-5-sonnet-20241022", max_tokens: 800, messages: [{role: "user", content: "You are Nova, Maidenlane AI. " + prompt}]})});
     var data = await res.json(); var txt = (data.content && data.content[0]) ? data.content[0].text : "";
     setFields(["xl-s-t","xl-e-t","xl-p-t","xl-w-t","xl-s-d","xl-e-d","xl-p-d","xl-w-d"],[extractField(txt,"SHOPIFY_TITLE")||item,extractField(txt,"EBAY_TITLE")||item,extractField(txt,"POSHMARK_TITLE")||item,extractField(txt,"WHATNOT_TITLE")||item,extractField(txt,"SHOPIFY_DESC")||"Authenticated luxury item.",extractField(txt,"EBAY_DESC")||"Authenticated.",extractField(txt,"POSHMARK_DESC")||"Gorgeous authenticated piece!",extractField(txt,"WHATNOT_DESC")||"Authenticated luxury!"]);
   } catch(e) { setFields(["xl-s-t","xl-e-t","xl-p-t","xl-w-t"],[item,item,item,item]); }
@@ -3668,7 +3663,7 @@ async function agentSend(key) {
   var uEl = document.createElement("div"); uEl.className = "aw-msg"; uEl.style.cssText = "background:rgba(201,168,76,0.08);border-color:rgba(201,168,76,0.2);color:#C9A84C;font-weight:500"; uEl.textContent = text; out.appendChild(uEl);
   var tEl = document.createElement("div"); tEl.className = "aw-msg aw-think"; tEl.style.borderColor = "rgba("+hexRgb(color)+",0.2)"; tEl.innerHTML = "<span style='background:"+color+"'></span><span style='background:"+color+"'></span><span style='background:"+color+"'></span>"; out.appendChild(tEl); out.scrollTop = out.scrollHeight;
   try {
-    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({model: "claude-sonnet-4-20250514", max_tokens: 800, system: agentSys[key] || "You are a helpful AI agent.", messages: [{role: "user", content: text}]})});
+    var res = await fetch("https://api.anthropic.com/v1/messages", {method: "POST", headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}, body: JSON.stringify({model: "claude-3-5-sonnet-20241022", max_tokens: 800, system: agentSys[key] || "You are a helpful AI agent.", messages: [{role: "user", content: text}]})});
     var data = await res.json(); var reply = (data.content && data.content[0]) ? data.content[0].text : "Please try again.";
     tEl.remove(); var rEl = document.createElement("div"); rEl.className = "aw-msg"; rEl.style.borderColor = "rgba("+hexRgb(color)+",0.2)"; rEl.innerHTML = reply.replace(/\n/g, "<br>"); out.appendChild(rEl);
   } catch(e) { tEl.remove(); var eEl = document.createElement("div"); eEl.className = "aw-msg"; eEl.style.cssText = "border-color:rgba(192,57,43,0.3);color:#E74C3C"; eEl.textContent = "Connection issue - please try again."; out.appendChild(eEl); }
@@ -3738,7 +3733,7 @@ async function genStatusEmail(btn,name,contract,item,price,status,commission,pay
     fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json","anthropic-dangerous-direct-browser-access":"true","x-api-key":getApiKey()},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"claude-3-5-sonnet-20241022",max_tokens:500,messages:[{role:"user",content:prompt}]})
     }).then(function(r){
       if(!r.ok){localEmail();return;}
       return r.json();
@@ -3893,9 +3888,9 @@ async function coSend(coId, coName) {
   try {
     var res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"},
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 600,
         system: "You are Glynn, AI Store Manager for " + coName + ". Process everything shared — analyze images, acknowledge documents, understand updates — and state 1-2 specific ways you will apply this to managing " + coName + " more effectively.",
         messages: histMsgs.concat([{role: "user", content: apiContent}])
@@ -4066,9 +4061,9 @@ async function tcpSend() {
   try {
     var res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: {"Content-Type": "application/json", "x-api-key": getApiKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"},
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-5-sonnet-20241022",
         max_tokens: 600,
         system: "You are Glynn, AI Store Manager. Private task session with " + tcpState.empName + " on task: " + tcpState.taskTitle + ". Guide: " + tcpState.taskHow + ". Help them complete this task. Be specific and direct. You can answer any question, not just task-related ones.",
         messages: histMsgs
@@ -4416,8 +4411,8 @@ function saveBulkItems(){var tb=document.getElementById('bulk-tbody');var sl=doc
 }
 function toggleCL(hdr){var body=hdr.nextElementSibling;if(!body)return;var open=body.classList.contains('open');document.querySelectorAll('.cl-b').forEach(function(b){b.classList.remove('open');});if(!open)body.classList.add('open');}
 function saveCL(btn){var card=btn.closest('.cl-c');var nm=card?card.querySelector('input'):null;alert(nm?'Saved: '+nm.value:'Saved.');}
-async function emailCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:'Write a brief warm professional email from '+co+' to '+name+'. Invite them to connect. Sign as: The '+co+' Team. Under 150 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Email';btn.disabled=false;}}
-async function updateCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:'Write a professional account update email from '+co+' to '+name+'. We are growing. Value our partnership. Invite a call. Sign as: Glenn Sunkett, '+co+'. Under 200 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Account Update';btn.disabled=false;}}
+async function emailCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,messages:[{role:'user',content:'Write a brief warm professional email from '+co+' to '+name+'. Invite them to connect. Sign as: The '+co+' Team. Under 150 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Email';btn.disabled=false;}}
+async function updateCL(btn){var name=btn.getAttribute('data-name');var co=btn.getAttribute('data-co');var prev=btn.parentElement.nextElementSibling;btn.textContent='Generating...';btn.disabled=true;try{var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:500,messages:[{role:'user',content:'Write a professional account update email from '+co+' to '+name+'. We are growing. Value our partnership. Invite a call. Sign as: Glenn Sunkett, '+co+'. Under 200 words.'}]})});var d=await res.json();var txt=(d.content&&d.content[0])?d.content[0].text:'Error.';if(prev){prev.style.display='block';prev.textContent=txt;}btn.textContent='Copy';btn.disabled=false;btn.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(txt);btn.textContent='Copied!';setTimeout(function(){btn.textContent='Copy';},2000);};}catch(e){btn.textContent='Account Update';btn.disabled=false;}}
 function acoWithHub(){
   var nm=document.getElementById('con');
   if(!nm||!nm.value.trim()){alert('Please enter a company name.');return;}
@@ -4441,7 +4436,7 @@ async function csCall(prompt,resultId,btnId){
   var origText=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Nova is writing...';}
   try{
-    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    var res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     var d=await res.json();
     var txt=(d.content&&d.content[0])?d.content[0].text:'Unable to generate. Try again.';
     csShowResult(resultId,txt);
@@ -4524,6 +4519,9 @@ async function csRun() {
   var xhr = new XMLHttpRequest();
   xhr.open("POST", "https://api.anthropic.com/v1/messages", true);
   xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.setRequestHeader("x-api-key", getApiKey());
+  xhr.setRequestHeader("anthropic-version", "2023-06-01");
+  xhr.setRequestHeader("anthropic-dangerous-direct-browser-access", "true");
   xhr.timeout = 30000;
   xhr.onload = function() {
     try {
@@ -4553,7 +4551,7 @@ async function csRun() {
     if (btn) { btn.disabled = false; btn.textContent = "\u26A1 Run Nova"; }
   };
   xhr.send(JSON.stringify({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-3-5-sonnet-20241022",
     max_tokens: 1200,
     messages: [{role: "user", content: userMsg}]
   }));
@@ -5609,7 +5607,7 @@ function sendHotline(){
   t.innerHTML='<div class="mav g">G</div><div class="mb" style="color:#9B97A0">Adjusting plan...</div>';
   if(feed){feed.appendChild(t);feed.scrollTop=feed.scrollHeight;}
   fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,
+    body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:300,
       system:'You are Glynn, AI manager for Maidenlane. Staff: '+((prData.employees||[]).map(function(e){return e.name;}).join(', '))+'. Owner sent urgent update. Acknowledge, state what you are adjusting, confirm new priorities. Max 4 sentences.',
       messages:[{role:'user',content:msg}]})
   }).then(function(r){return r.json();}).then(function(d){
@@ -5638,7 +5636,7 @@ function sendIntelMsg(){
   t.innerHTML='<div class="mav g" style="background:#8B64BF">G</div><div class="mb" style="color:#9B97A0">Analyzing...</div>';
   if(feed){feed.appendChild(t);feed.scrollTop=feed.scrollHeight;}
   fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,
+    body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,
       system:'You are Glynn Intel for Maidenlane. Employees: '+((prData.employees||[]).map(function(e){return e.name;}).join(', '))+'. Analyze owner input and provide specific actionable guidance.',
       messages:[{role:'user',content:msg}]})
   }).then(function(r){return r.json();}).then(function(d){
@@ -7070,7 +7068,7 @@ function csLoadBatchRef(inp){
 // ── NOVA: WRITE CONTENT ───────────────────────────────────────────
 async function csRunWrite(){
   var key=csGetKey();
-  if(!key){alert('Anthropic API key required. Go to Settings → Glynn AI Connection.');return;}
+  if(!key){var ks=document.getElementById('lens-status');if(ks){ks.style.color='#E74C3C';ks.textContent='⚠ API key missing — go to Settings → Glynn AI Connection';}return;}
   var co=document.getElementById('cs-co').value;
   var type=document.getElementById('cs-type').value;
   var platform=document.getElementById('cs-platform').value;
@@ -7115,7 +7113,7 @@ async function csRunWrite(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':csGetKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sysPrompt,messages:messages})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:2000,system:sysPrompt,messages:messages})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -7153,7 +7151,7 @@ async function csGenPromptNew(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
     });
     var d=await resp.json();
     csData.prompt=d.content&&d.content[0]?d.content[0].text.trim():'';
@@ -7223,7 +7221,7 @@ async function csGenVideoPrompt(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:sysPrompt,messages:messages})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,system:sysPrompt,messages:messages})
     });
     var d=await resp.json();
     var promptTxt=d.content&&d.content[0]?d.content[0].text.trim():'';
@@ -7309,7 +7307,7 @@ async function csRunBatch(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -7517,7 +7515,7 @@ async function glynnAutonomous(manual){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:2000,system:sysPrompt,messages:[{role:'user',content:userMsg}]})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -7613,84 +7611,62 @@ var tpFontSize=22;
 
 // ── CAMERA ────────────────────────────────────────────────────────
 function lensStartCamera(){
-  var video=document.getElementById('lens-video');
-  var startRow=document.getElementById('lens-cam-start-row');
-  if(!video)return;
-  if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false})
-      .then(function(stream){
-        lensStream=stream;
-        video.srcObject=stream;
-        video.play();
-        if(startRow)startRow.style.display='none';
-      })
-      .catch(function(err){
-        if(startRow)startRow.style.display='none'; // Camera unavailable — use text
-        console.log('Camera:',err.message);
-      });
-  } else {
-    if(startRow)startRow.style.display='none';
-  }
+  // Native camera — opens on demand, no continuous stream
 }
 function lensStopCamera(){
   if(lensStream){lensStream.getTracks().forEach(function(t){t.stop();});lensStream=null;}
 }
-function lensCapture(){
-  var video=document.getElementById('lens-video');
-  var canvas=document.getElementById('lens-canvas');
+function lensOpenCamera(){document.getElementById('lens-native-camera').click();}
+function lensNativeCapture(inp){
+  var file=inp.files[0];if(!file)return;
+  var camWrap=document.getElementById('lens-cam-wrap');
   var preview=document.getElementById('lens-photo-preview');
   var img=document.getElementById('lens-captured-img');
   var analyzeBtn=document.getElementById('lens-analyze-btn');
-  var camWrap=document.getElementById('lens-cam-wrap');
-  if(!video||!canvas)return;
-  if(!video.srcObject){
-    // No camera — trigger file picker as fallback
-    var inp=document.createElement('input');
-    inp.type='file';inp.accept='image/*';inp.capture='environment';
-    inp.onchange=function(){
-      if(!this.files[0])return;
-      var reader=new FileReader();
-      reader.onload=function(e){
-        lensData.capturedPhoto=e.target.result;
-        if(img)img.src=e.target.result;
-        if(preview)preview.style.display='block';
-        if(camWrap)camWrap.style.display='none';
-        if(analyzeBtn)analyzeBtn.style.display='block';
-        // Auto-analyze after file load
-        setTimeout(function(){lensAnalyze();},400);
-      };
-      reader.readAsDataURL(this.files[0]);
+  var status=document.getElementById('lens-status');
+  if(status){status.style.color='#C9A84C';status.textContent='⚡ Photo received — Glynn is analyzing...';}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    // Resize image to max 1024px to stay within Anthropic's 5MB limit
+    var rawData=e.target.result;
+    var tmpImg=new Image();
+    tmpImg.onload=function(){
+      var maxDim=1024;
+      var w=tmpImg.width; var h=tmpImg.height;
+      if(w>maxDim||h>maxDim){
+        if(w>h){h=Math.round(h*(maxDim/w));w=maxDim;}
+        else{w=Math.round(w*(maxDim/h));h=maxDim;}
+      }
+      var cnv=document.getElementById('lens-canvas');
+      cnv.width=w; cnv.height=h;
+      var ctx=cnv.getContext('2d');
+      ctx.drawImage(tmpImg,0,0,w,h);
+      var resized=cnv.toDataURL('image/jpeg',0.75);
+      lensData.capturedPhoto=resized;
+      if(img)img.src=resized;
+      if(preview)preview.style.display='block';
+      if(camWrap)camWrap.style.display='none';
+      if(analyzeBtn)analyzeBtn.style.display='block';
+      setTimeout(function(){lensAnalyze();},200);
     };
-    inp.click();return;
-  }
-  // Use requestAnimationFrame to ensure iOS Safari has current video frame
-  var doCapture=function(){
-  canvas.width=video.videoWidth||1280;
-  canvas.height=video.videoHeight||720;
-  var ctx=canvas.getContext('2d');
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
-  var dataUrl=canvas.toDataURL('image/jpeg',0.80);
-  lensData.capturedPhoto=dataUrl;
-  if(img)img.src=dataUrl;
-  if(preview)preview.style.display='block';
-  if(camWrap)camWrap.style.display='none';
-  if(analyzeBtn)analyzeBtn.style.display='block';
-  // Auto-analyze immediately after capture
-  setTimeout(function(){lensAnalyze();},300);
+    tmpImg.src=rawData;
   };
-  requestAnimationFrame(doCapture);
+  reader.readAsDataURL(file);
+  inp.value='';
 }
+function lensCapture(){lensOpenCamera();}
 function lensRetake(){
   var preview=document.getElementById('lens-photo-preview');
   var camWrap=document.getElementById('lens-cam-wrap');
   var analyzeBtn=document.getElementById('lens-analyze-btn');
   var results=document.getElementById('lens-results');
+  var status=document.getElementById('lens-status');
   if(preview)preview.style.display='none';
   if(camWrap)camWrap.style.display='block';
   if(analyzeBtn)analyzeBtn.style.display='none';
   if(results)results.style.display='none';
+  if(status){status.textContent='';status.style.color='#9B97A0';}
   lensData.capturedPhoto=null;
-  document.getElementById('lens-status').textContent='';
 }
 function lensSearch(){
   var analyzeBtn=document.getElementById('lens-analyze-btn');
@@ -7701,7 +7677,11 @@ function lensSearch(){
 // ── CORE ANALYSIS ─────────────────────────────────────────────────
 async function lensAnalyze(){
   var key=getApiKey();
-  if(!key){alert('Anthropic API key required. Go to Settings → Glynn AI Connection.');return;}
+  if(!key){
+    if(status){status.style.color='#E74C3C';status.textContent='⚠ API key missing — go to Settings → Glynn AI Connection';}
+    if(btn){btn.disabled=false;}
+    return;
+  }
   var textInput=document.getElementById('lens-text-input').value.trim();
   var condition=document.getElementById('lens-condition').value;
   var platform=document.getElementById('lens-platform').value;
@@ -7711,7 +7691,7 @@ async function lensAnalyze(){
   var results=document.getElementById('lens-results');
   if(!lensData.capturedPhoto&&!textInput){alert('Take a photo or type an item name first.');return;}
   if(btn){btn.disabled=true;btn.textContent='&#9889; Analyzing...';}
-  if(status){status.style.color='#C9A84C';status.textContent='&#9889; Glynn is scanning the item and pulling live market data...';}
+  if(status)status.textContent='Glynn is identifying the item and pulling market data...';
   if(results)results.style.display='none';
 
   var priceNote=price?'Listed at $'+price+'. ':'';
@@ -7732,21 +7712,33 @@ async function lensAnalyze(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sysPrompt,messages:messages})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:1500,system:sysPrompt,messages:messages})
     });
     var d=await resp.json();
+    // Check for API errors first
+    if(!resp.ok||d.error||!d.content){
+      var errMsg=d.error?d.error.message:('API error '+resp.status);
+      if(status){status.style.color='#E74C3C';status.textContent='API Error: '+errMsg;}
+      if(btn){btn.disabled=false;btn.innerHTML='&#9889; Analyze — Get Market Report + Script';}
+      return;
+    }
     var txt=d.content&&d.content[0]?d.content[0].text:'';
+    if(!txt){
+      if(status){status.style.color='#E74C3C';status.textContent='No response from API. Check your key and try again.';}
+      if(btn){btn.disabled=false;btn.innerHTML='&#9889; Analyze — Get Market Report + Script';}
+      return;
+    }
 
-    // Parse sections
-    var itemMatch=txt.match(/ITEM_ID:\n([\s\S]*?)(?=MARKET_COMPS:|$)/);
-    var compsMatch=txt.match(/MARKET_COMPS:\n([\s\S]*?)(?=SELLING_SCRIPT:|$)/);
-    var scriptMatch=txt.match(/SELLING_SCRIPT:\n([\s\S]*?)(?=OBJECTION_HANDLERS:|$)/);
-    var objMatch=txt.match(/OBJECTION_HANDLERS:\n([\s\S]*?)(?=PLATFORM_LISTING:|$)/);
-    var listingMatch=txt.match(/PLATFORM_LISTING:\n([\s\S]*?)$/);
+    // Robust parsing — works even if format varies
+    var itemMatch=txt.match(/ITEM_ID:?\n?([\s\S]*?)(?=MARKET_COMPS:|$)/);
+    var compsMatch=txt.match(/MARKET_COMPS:?\n?([\s\S]*?)(?=SELLING_SCRIPT:|$)/);
+    var scriptMatch=txt.match(/SELLING_SCRIPT:?\n?([\s\S]*?)(?=OBJECTION_HANDLERS:|$)/);
+    var objMatch=txt.match(/OBJECTION_HANDLERS:?\n?([\s\S]*?)(?=PLATFORM_LISTING:|$)/);
+    var listingMatch=txt.match(/PLATFORM_LISTING:?\n?([\s\S]*?)$/);
 
     lensData.item=itemMatch?itemMatch[1].trim():'';
-    lensData.comps=compsMatch?compsMatch[1].trim():'';
-    lensData.script=scriptMatch?scriptMatch[1].trim():'';
+    lensData.comps=compsMatch?compsMatch[1].trim():txt;
+    lensData.script=scriptMatch?scriptMatch[1].trim():txt;
     lensData.objections=objMatch?objMatch[1].trim():'';
     lensData.listing=listingMatch?listingMatch[1].trim():'';
 
@@ -7766,8 +7758,6 @@ async function lensAnalyze(){
     if(status)status.textContent='Error: '+err.message;
   }
   if(btn){btn.disabled=false;btn.innerHTML='&#9889; Analyze — Get Market Report + Script';}
-  var capBtn=document.getElementById('lens-capture-btn');
-  if(capBtn){capBtn.style.background='#fff';capBtn.textContent='\uD83D\uDCF7';}
 }
 
 // ── TELEPROMPTER ──────────────────────────────────────────────────
@@ -7888,7 +7878,7 @@ function lensReset(){
   if(textInp)textInp.value='';
   document.getElementById('lens-price').value='';
   // Restart camera
-  if(!lensStream)lensStartCamera();
+  var cw=document.getElementById('lens-cam-wrap');if(cw)cw.style.display='block';
 }
 function lensCopyListing(){
   if(navigator.clipboard)navigator.clipboard.writeText(lensData.listing);
@@ -7913,7 +7903,7 @@ async function lensGenOpeningScript(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:400,messages:[{role:'user',content:prompt}]})
     });
     var d=await resp.json();
     if(el)el.textContent=d.content&&d.content[0]?d.content[0].text.trim():'Could not generate script.';
@@ -7935,7 +7925,7 @@ async function lensGenClosingScript(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:300,messages:[{role:'user',content:prompt}]})
     });
     var d=await resp.json();
     if(el)el.textContent=d.content&&d.content[0]?d.content[0].text.trim():'';
@@ -8002,7 +7992,7 @@ async function csGenCalendar(){
     var resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:'Generate a 7-day content calendar for '+co+(focus?' focused on: '+focus:'')+'. Start from '+start+'. Platforms: '+platforms.join(', ')+'. Write complete, post-ready content for each day.'}]})
+      body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:4000,system:sysPrompt,messages:[{role:'user',content:'Generate a 7-day content calendar for '+co+(focus?' focused on: '+focus:'')+'. Start from '+start+'. Platforms: '+platforms.join(', ')+'. Write complete, post-ready content for each day.'}]})
     });
     var d=await resp.json();
     var txt=d.content&&d.content[0]?d.content[0].text:'';
@@ -8059,11 +8049,64 @@ function csCalAddAll(){
   alert('All 7 days added to Queue \u2713\nGo to Queue tab to review.');
 }
 
+
+async function testApiKey(){
+  var key=getApiKey();
+  var resultEl=document.getElementById('api-test-result');
+  if(!resultEl)return;
+  resultEl.style.display='block';
+  if(!key){
+    resultEl.style.background='rgba(231,76,60,0.15)';
+    resultEl.style.border='1px solid rgba(231,76,60,0.4)';
+    resultEl.innerHTML='<strong style="color:#E74C3C">&#10007; No API key found</strong><br>Enter your Anthropic key above and tap Save first.';
+    return;
+  }
+  resultEl.style.background='rgba(201,168,76,0.1)';
+  resultEl.style.border='1px solid rgba(201,168,76,0.3)';
+  resultEl.innerHTML='<span style="color:#C9A84C">Testing... key ends in ...'+key.slice(-6)+'</span>';
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-3-5-sonnet-20241022',
+        max_tokens:30,
+        messages:[{role:'user',content:'Reply with exactly: GLYNN OK'}]
+      })
+    });
+    var d=await resp.json();
+    if(resp.ok&&d.content&&d.content[0]){
+      resultEl.style.background='rgba(29,158,117,0.15)';
+      resultEl.style.border='1px solid rgba(29,158,117,0.4)';
+      resultEl.innerHTML='<strong style="color:#1D9E75">&#10003; API CONNECTED</strong><br>'
+        +'Response: '+d.content[0].text+'<br>'
+        +'Model: '+d.model+'<br>'
+        +'Key: ...'+key.slice(-6);
+    } else {
+      var errMsg=d.error?(d.error.type+': '+d.error.message):'HTTP '+resp.status;
+      resultEl.style.background='rgba(231,76,60,0.15)';
+      resultEl.style.border='1px solid rgba(231,76,60,0.4)';
+      resultEl.innerHTML='<strong style="color:#E74C3C">&#10007; FAILED</strong><br>'
+        +errMsg+'<br>Key: ...'+key.slice(-6)+'<br>HTTP: '+resp.status;
+    }
+  }catch(err){
+    resultEl.style.background='rgba(231,76,60,0.15)';
+    resultEl.style.border='1px solid rgba(231,76,60,0.4)';
+    resultEl.innerHTML='<strong style="color:#E74C3C">&#10007; NETWORK ERROR</strong><br>'
+      +err.message+'<br>Key: ...'+(key?key.slice(-6):'none');
+  }
+}
+
 window.addEventListener('load',function(){
   try{posLoad();}catch(e){}
   try{csLoadQueue();}catch(e){}
   try{lensLoadQueue();}catch(e){}
-  setTimeout(function(){try{lensStartCamera();}catch(e){}},800);
+  // Native camera opens on demand
   try{loadAutoSettings();}catch(e){}
   setInterval(function(){try{checkAutoSchedule();}catch(e){}},300000);
   try{posInitListeners();}catch(e){}
@@ -8342,7 +8385,7 @@ function aoGenerate(){
     method:'POST',
     headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
     body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
+      model:'claude-3-5-sonnet-20241022',
       max_tokens:800,
       system:sysPrompt,
       messages:[{role:'user',content:task}]
@@ -9099,7 +9142,7 @@ function sendIntel(){
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':getApiKey()},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sysCtx,messages:intelHistory})
+    body:JSON.stringify({model:'claude-3-5-sonnet-20241022',max_tokens:300,system:sysCtx,messages:intelHistory})
   }).then(function(r){return r.json();})
   .then(function(d){
     var reply = d.content&&d.content[0]?d.content[0].text:'Received. I\'ve updated my records.';
@@ -9490,8 +9533,7 @@ function showDayTimesheet(empId, dateStr, dayLabel, card){
   panel.scrollIntoView({behavior:'smooth',block:'nearest'});
   if(id==='p-perf'){try{dashRenderPerf();}catch(e){}}
   if(id==='p-dash'){try{dashRefreshMain();}catch(e){}}
-  if(id==='p-lens'){try{lensStartCamera();}catch(e){}}
-  if(id!=='p-lens'){try{lensStopCamera();}catch(e){}}
+  // Native camera — no panel hooks needed
 }
 
 function showFullTimesheet(empId, empName, rate, card){
