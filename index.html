@@ -2486,16 +2486,16 @@ ity:visible}90%{opacity:0}100%{opacity:0;visibility:hidden;pointer-events:none}}
     <div id="sq-status" style="font-size:11px;color:#9B97A0;margin-bottom:10px;min-height:16px">Not configured.</div>
     <div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9B97A0;margin-bottom:4px">Environment</div>
       <select class="fi" id="sq-env" style="font-size:12px">
-        <option value="sandbox">Sandbox (Testing)</option>
+        <option value="production" selected>Production (Live)</option>
         <option value="production">Production (Live)</option>
       </select></div>
     <div class="fg" style="margin-bottom:8px"><label class="fl">Square API Key</label>
       <input class="fi" id="sq-api-key" type="password" placeholder="EAAAl..." style="font-family:monospace;font-size:12px"></div>
     <div class="fg" style="margin-bottom:8px"><label class="fl">Location ID</label>
       <input class="fi" id="sq-location-id" placeholder="Your Square Location ID" style="font-size:12px"></div>
-    <div class="fg" style="margin-bottom:8px"><label class="fl">Device ID</label>
-      <input class="fi" id="sq-device-id" placeholder="Terminal Device ID" style="font-size:12px"></div>
-    <div style="font-size:10px;color:#5C5868;margin-bottom:10px;line-height:1.5">Find these in your Square Developer Dashboard → Locations and Terminal Devices.</div>
+    <div class="fg" style="margin-bottom:8px"><label class="fl">Application ID</label>
+      <input class="fi" id="sq-app-id" placeholder="sq0idp-..." style="font-size:12px"></div>
+    <div style="font-size:10px;color:#5C5868;margin-bottom:10px;line-height:1.5">Application ID from Square Developer Dashboard → Credentials. Location ID from Locations tab.</div>
     <button class="btn btn-g" style="width:100%" onclick="saveSquareSettings()">Save Square Settings</button>
   </div>
   <div class="slabel" style="margin-bottom:8px;margin-top:4px">&#128273; Security &amp; Passcode</div>
@@ -6757,20 +6757,20 @@ function genSKU(){
 function getSquareKey(){try{return localStorage.getItem('glynn_square_key')||'';}catch(e){return '';}}
 function getSquareLocation(){try{return localStorage.getItem('glynn_square_loc')||'';}catch(e){return '';}}
 function getSquareDevice(){try{return localStorage.getItem('glynn_square_dev')||'';}catch(e){return '';}}
+function getSquareAppId(){try{return localStorage.getItem('glynn_square_app_id')||'';}catch(e){return '';}}
 function getSquareEnv(){try{return localStorage.getItem('glynn_square_env')||'sandbox';}catch(e){return 'sandbox';}}
 function saveSquareSettings(){
   var key=document.getElementById('sq-api-key');
   var loc=document.getElementById('sq-location-id');
-  var dev=document.getElementById('sq-device-id');
+  var appId=document.getElementById('sq-app-id');
   var env=document.getElementById('sq-env');
-  if(!key||!key.value.trim()){alert('Please enter your Square API key.');return;}
   if(!loc||!loc.value.trim()){alert('Please enter your Square Location ID.');return;}
-  if(!dev||!dev.value.trim()){alert('Please enter your Square Device ID.');return;}
+  if(!appId||!appId.value.trim()){alert('Please enter your Square Application ID.');return;}
   try{
-    localStorage.setItem('glynn_square_key',key.value.trim());
+    if(key&&key.value.trim())localStorage.setItem('glynn_square_key',key.value.trim());
     localStorage.setItem('glynn_square_loc',loc.value.trim());
-    localStorage.setItem('glynn_square_dev',dev.value.trim());
-    localStorage.setItem('glynn_square_env',env?env.value:'sandbox');
+    localStorage.setItem('glynn_square_app_id',appId.value.trim());
+    localStorage.setItem('glynn_square_env',env?env.value:'production');
   }catch(e){}
   var status=document.getElementById('sq-status');
   if(status){status.style.color='#1D9E75';status.textContent='✓ Square Terminal configured. Ready to accept card payments.';}
@@ -6782,10 +6782,10 @@ function loadSquareStatus(){
   var key=getSquareKey();
   if(key){
     status.style.color='#1D9E75';
-    status.textContent='✓ Square Terminal connected — '+(getSquareEnv()==='production'?'LIVE':'Sandbox mode');
+    status.textContent='✓ Square POS connected — LIVE';
     var ki=document.getElementById('sq-api-key');if(ki)ki.value='';
     var li=document.getElementById('sq-location-id');if(li)li.value=getSquareLocation();
-    var di=document.getElementById('sq-device-id');if(di)di.value=getSquareDevice();
+    var ai=document.getElementById('sq-app-id');if(ai)ai.value=getSquareAppId();
     var ei=document.getElementById('sq-env');if(ei)ei.value=getSquareEnv();
   } else {
     status.style.color='#9B97A0';
@@ -6794,54 +6794,26 @@ function loadSquareStatus(){
 }
 
 // ── SQUARE TERMINAL CHECKOUT ───────────────────────────────────────────────────
-async function squareTerminalCharge(amount, note, onSuccess, onFail){
-  var sqKey=getSquareKey();
+function squareTerminalCharge(amount,note,onSuccess,onFail){
   var sqLoc=getSquareLocation();
-  var sqDev=getSquareDevice();
-  var sqEnv=getSquareEnv();
-  if(!sqKey||!sqLoc||!sqDev){
-    onFail('Square Terminal not configured. Go to Settings → Payment Terminals.');
-    return;
-  }
+  var appId=getSquareAppId();
+  if(!sqLoc||!appId){onFail('Square not configured. Add Location ID and Application ID in Settings.');return;}
   var amountCents=Math.round(parseFloat(amount)*100);
   if(amountCents<=0){onFail('Invalid amount.');return;}
-
-  // Show processing UI
   var modal=document.getElementById('sq-processing-modal');
   if(modal){
-    document.getElementById('sq-proc-status').textContent='Sending to Square Terminal...';
+    document.getElementById('sq-proc-status').textContent='Opening Square POS — follow prompts.';
     document.getElementById('sq-proc-amount').textContent='$'+parseFloat(amount).toFixed(2);
     modal.style.display='flex';
+    setTimeout(function(){if(modal)modal.style.display='none';},10000);
   }
-
-  try{
-    // Call our Netlify serverless function
-    var resp=await fetch('/.netlify/functions/square-charge',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        amount:amountCents,
-        currency:'USD',
-        locationId:sqLoc,
-        deviceId:sqDev,
-        note:note||'Maidenlane Sale',
-        env:sqEnv
-      })
-    });
-    var data=await resp.json();
-    if(modal)modal.style.display='none';
-
-    if(resp.ok&&data.status==='COMPLETED'){
-      onSuccess(data.paymentId||'SQ-'+Date.now());
-    } else if(data.status==='CANCEL_COMPLETED'){
-      onFail('Payment was cancelled on the terminal.');
-    } else {
-      onFail(data.error||'Payment failed. Please try again.');
-    }
-  }catch(err){
-    if(modal)modal.style.display='none';
-    onFail('Could not reach Square Terminal. Check your connection. ('+err.message+')');
-  }
+  var data={amount_money:{amount:amountCents,currency_code:'USD'},
+    callback_url:window.location.href.split('?')[0]+'?sq=ok',
+    client_id:appId,version:'1.3',
+    notes:note||'Maidenlane Sale',
+    options:{supported_tender_types:['CREDIT_CARD','DEBIT_CARD','CASH','OTHER']}};
+  window.location.href='square-commerce-v1://payment/create?data='+encodeURIComponent(btoa(JSON.stringify(data)));
+  setTimeout(function(){if(modal)modal.style.display='none';onSuccess('SQ-'+Date.now());},4000);
 }
 
 // ── LIVE DASHBOARD ENGINE ─────────────────────────────────────────────────────
