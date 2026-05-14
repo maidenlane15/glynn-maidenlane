@@ -4577,10 +4577,10 @@ async function csImg() {
     var r = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {"Content-Type": "application/json", "Authorization": "Bearer " + key},
-      body: JSON.stringify({model: "dall-e-3", prompt: prompt, n: 1, size: "1024x1024", quality: "hd"})
+      body: JSON.stringify({model: "dall-e-3", prompt: prompt, n: 1, size: "1024x1024", quality: "standard"})
     });
     var d = await r.json();
-    if (!r.ok || d.error) { throw new Error(d.error ? d.error.message : "OpenAI error " + r.status); }
+    if (!r.ok || d.error) { throw new Error(d.error ? (d.error.code||"")+": "+d.error.message : "OpenAI error " + r.status + " - check your OpenAI key has DALL-E access"); }
     if (d.data && d.data[0]) {
       csData.imgUrl = d.data[0].url;
       var img = document.getElementById("cs-img");
@@ -7164,7 +7164,13 @@ async function csGenPromptNew(){
     csData.prompt=d.content&&d.content[0]?d.content[0].text.trim():'';
     if(display){display.textContent=csData.prompt;display.style.display='block';}
     if(status)status.textContent='Prompt ready. Tap Generate Image.';
-  }catch(err){if(status)status.textContent='Error: '+err.message;}
+  }catch(err){
+    var msg=err.message;
+    if(msg.includes('fetch')||msg.includes('CORS')||msg.includes('Failed')){
+      msg='Runway requires a backend proxy. Upload Glynn to Netlify (glynn-maidenlane-v2.netlify.app) to use video generation.';
+    }
+    if(status)status.textContent='Error: '+msg;
+  }
   if(btn){btn.disabled=false;btn.textContent='⚡ Nova: Write Prompt';}
 }
 
@@ -7184,7 +7190,7 @@ async function csImg(){
     var r=await fetch('https://api.openai.com/v1/images/generations',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+oaiKey},
-      body:JSON.stringify({model:'dall-e-3',prompt:csData.prompt,n:1,size:size,quality:'hd'})
+      body:JSON.stringify({model:'dall-e-3',prompt:csData.prompt,n:1,size:'1024x1024',quality:'standard'})
     });
     var d=await r.json();
     if(!r.ok||d.error){throw new Error(d.error?d.error.message:'OpenAI error '+r.status);}
