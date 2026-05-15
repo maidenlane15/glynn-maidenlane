@@ -1,7 +1,6 @@
 exports.handler = async function(event, context) {
   const SQUARE_ACCESS_TOKEN = 'EAAAlzOzpaRO1to1RwWjBGSCQoGpsbP1rL9LPt8m2Q2P2-aczntEaTOVvzzfl7bQ';
-  const SQUARE_LOCATION_ID  = 'L0FDVGJRJ8ZB3';
-  const SQUARE_DEVICE_ID    = '606CS149C4001895';
+  const SQUARE_DEVICE_ID    = '54331BBC32BB0B7';
   const SQUARE_API_BASE     = 'https://connect.squareup.com';
   const SQUARE_VERSION      = '2025-01-23';
 
@@ -21,7 +20,6 @@ exports.handler = async function(event, context) {
     return { statusCode: 204, headers: cors, body: '' };
   }
 
-  // GET: diagnostic
   if (event.httpMethod === 'GET') {
     const results = {};
     try {
@@ -50,21 +48,6 @@ exports.handler = async function(event, context) {
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Invalid amount' }) };
   }
 
-  // Step 1: Get real device_id from Square API
-  let squareDeviceId = null;
-  try {
-    const r = await fetch(`${SQUARE_API_BASE}/v2/devices`, { headers: sqHeaders });
-    const d = await r.json();
-    if (d.devices && d.devices.length > 0) {
-      const terminal = d.devices.find(x => x.status && x.status.code === 'PAIRED') || d.devices[0];
-      squareDeviceId = terminal.id;
-    }
-  } catch(e) {}
-
-  // Step 2: Fallback to hardcoded if API lookup fails
-  if (!squareDeviceId) squareDeviceId = SQUARE_DEVICE_ID;
-
-  // Step 3: Create Terminal checkout
   const idempotencyKey = 'glynn-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 
   const payload = {
@@ -76,7 +59,7 @@ exports.handler = async function(event, context) {
       payment_options: { autocomplete: true },
       tip_settings: { allow_tipping: false }
     },
-    device_id: squareDeviceId
+    device_id: SQUARE_DEVICE_ID
   };
 
   try {
@@ -93,7 +76,7 @@ exports.handler = async function(event, context) {
         body: JSON.stringify({
           error: data.errors?.[0]?.detail || data.errors?.[0]?.code || 'Square checkout failed',
           square_errors: data.errors,
-          device_id_used: squareDeviceId
+          device_id_used: SQUARE_DEVICE_ID
         })
       };
     }
@@ -105,7 +88,7 @@ exports.handler = async function(event, context) {
         success: true,
         checkout_id: data.checkout?.id,
         status: data.checkout?.status,
-        device_id: squareDeviceId
+        device_id: SQUARE_DEVICE_ID
       })
     };
 
