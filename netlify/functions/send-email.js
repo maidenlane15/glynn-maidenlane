@@ -1,68 +1,57 @@
+const https = require('https');
+
 exports.handler = async function(event, context) {
-  const cors = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
-  };
-
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 204, headers: cors, body: '' };
-  }
-
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: cors, body: JSON.stringify({ error: 'Method not allowed' }) };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  let body;
-  try { body = JSON.parse(event.body); }
-  catch(e) { return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
-
-  const { to, from, subject, text, html, resend_key } = body;
-
-  if (!resend_key) {
-    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'No Resend API key provided' }) };
-  }
-  if (!to || !subject) {
-    return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Missing to or subject' }) };
-  }
-
+  let payload;
   try {
-    const resp = await fetch('https://api.resend.com/emails', {
+    payload = JSON.parse(event.body);
+  } catch(e) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
+  }
+
+  const { resend_key, from, to, subject, text } = payload;
+
+  if (!resend_key || !from || !to || !subject) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing required fields', received: { resend_key: !!resend_key, from, to, subject } }) };
+  }
+
+  const emailData = JSON.stringify({ from, to, subject, text: text || '' });
+
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.resend.com',
+      port: 443,
+      path: '/emails',
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${resend_key}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resend_key}`
-      },
-      body: JSON.stringify({
-        from: from || 'Glynn <hello@maidenlane.com>',
-        to: Array.isArray(to) ? to : [to],
-        subject: subject,
-        text: text || '',
-        html: html || ''
-      })
+        'Content-Length': Buffer.byteLength(emailData)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        let parsed;
+        try { parsed = JSON.parse(data); } catch(e) { parsed = { raw: data }; }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ statusCode: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ success: true, id: parsed.id }) });
+        } else {
+          resolve({ statusCode: res.statusCode, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ success: false, error: parsed }) });
+        }
+      });
     });
 
-    const data = await resp.json();
+    req.on('error', (e) => {
+      resolve({ statusCode: 500, body: JSON.stringify({ success: false, error: e.message }) });
+    });
 
-    if (!resp.ok) {
-      return {
-        statusCode: resp.status,
-        headers: cors,
-        body: JSON.stringify({ error: data.message || 'Resend API error', details: data })
-      };
-    }
-
-    return {
-      statusCode: 200,
-      headers: cors,
-      body: JSON.stringify({ success: true, id: data.id })
-    };
-
-  } catch(err) {
-    return {
-      statusCode: 500,
-      headers: cors,
-      body: JSON.stringify({ error: 'Email send failed: ' + err.message })
-    };
-  }
+    req.write(emailData);
+    req.end();
+  });
 };
