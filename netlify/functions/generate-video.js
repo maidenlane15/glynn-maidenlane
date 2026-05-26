@@ -46,7 +46,7 @@ exports.handler = async function(event) {
     if (hasImage) {
       endpoint = '/v1/image_to_video';
       payload = {
-        model: 'gen3a_turbo',
+        model: 'gen4.5',
         promptImage: prompt_image,
         promptText: (prompt_text || '').substring(0, 1000),
         duration: validDuration,
@@ -55,7 +55,7 @@ exports.handler = async function(event) {
     } else {
       endpoint = '/v1/text_to_video';
       payload = {
-        model: 'gen3a_turbo',
+        model: 'gen4.5',
         promptText: (prompt_text || '').substring(0, 1000),
         duration: validDuration,
         ratio: mappedRatio
